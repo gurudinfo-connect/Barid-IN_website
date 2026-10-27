@@ -3,13 +3,22 @@
   "version": "2.0.0",
   "private": true,
   "description": "Public marketing website, gated demo videos and lead capture for the Barid-IN Ticketing Tool (React front end, Node server)",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "node build.js",
     "start": "node server.js",
     "dev": "node build.js && node server.js",
-    "test": "node build.js && node --test tests/site.test.js"
+    "test": "node build.js && node --test tests/site.test.js tests/netlify.test.js",
+    "build:netlify": "node build.js && node scripts/postbuild.js"
   },
-  "dependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" },
-  "devDependencies": { "esbuild": "^0.25.0" }
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@netlify/blobs": "^8.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
 }

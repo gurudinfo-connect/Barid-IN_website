@@ -3,3 +3,6 @@ node_modules
 data/*
 !data/.gitkeep
 dist
+
+# Local Netlify folder
+.netlify

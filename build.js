@@ -13,7 +13,7 @@ esbuild.build({
   entryPoints: { app: path.join(__dirname, 'src/main.jsx') },
   outdir: path.join(dist, 'assets'),
   entryNames: '[name]-[hash]',
-  bundle: true, minify: true, format: 'iife', target: 'es2020', metafile: true,
+  bundle: true, minify: true, external: ['/fonts/*'], format: 'iife', target: 'es2020', metafile: true,
   jsx: 'automatic', loader: { '.js': 'jsx' },
   define: { 'process.env.NODE_ENV': '"production"' },
   logLevel: 'warning',

@@ -6,15 +6,15 @@ const Head = ({ t, p }) => <div className="head"><h2>{t}</h2>{p && <p>{p}</p>}</
 
 /* ---------- hero: a sample ticket you can step through ---------- */
 const FLOW = [
-  ['Employee', 'raised this from the incident form. It is waiting for review.', 'Review ticket'],
-  ['Staff', 'reviewed it and now choose who should handle it.', 'Assign to Ravi'],
-  ['Ravi', 'sees a banner to accept or decline the ticket.', 'Accept ticket'],
-  ['Ravi', 'posted a progress update: 60% complete.', 'Set pending'],
-  ['Ravi', 'is waiting for a replacement battery.', 'Mark resolved'],
-  ['Asha', 'confirms the fix and closes the ticket, or reopens it.', 'Close ticket'],
+  ['Employee', 'reported that the production server is not responding. It is waiting for triage.', 'Triage ticket'],
+  ['Service desk', 'triaged it as a P1 server outage and now chooses an engineer.', 'Assign to Ravi'],
+  ['Ravi', 'sees a banner to accept the ticket and start work.', 'Accept ticket'],
+  ['Ravi', 'posted an update: server restarted, services 60% restored.', 'Set pending'],
+  ['Ravi', 'is waiting for Asha to confirm the application is back online.', 'Mark resolved'],
+  ['Asha', 'confirms the server is back online and closes the ticket, or reopens it.', 'Close ticket'],
   ['Everyone', 'can see every change in the ticket history.', ''],
 ];
-const START = 2 * 3600 + 48 * 60;
+const START = 58 * 60 + 12;
 const fmt = (s) => [Math.floor(s / 3600), String(Math.floor((s % 3600) / 60)).padStart(2, '0'), String(s % 60).padStart(2, '0')].join(':');
 
 const Route = ({ cur }) => (
@@ -51,12 +51,12 @@ function Ticket() {
     <div className="ticket" data-s={i}>
       <span className="glare" aria-hidden="true" />
       <div className="t-main">
-        <div className="t-top"><span>Sample ticket</span><b>BI-T16ID24</b></div>
-        <p className="t-title">Laptop will not boot</p>
+        <div className="t-top"><span>IT Service Desk · Major incident</span><b>BI-T16ID24</b></div>
+        <p className="t-title">Production server is down</p>
         <dl className="t-meta">
-          <div><dt>Requester</dt><dd>Asha, Finance</dd></div>
-          <div><dt>Category</dt><dd>Hardware</dd></div>
-          <div><dt>Priority</dt><dd>High</dd></div>
+          <div><dt>Requester</dt><dd>Asha, Operations</dd></div>
+          <div><dt>Category</dt><dd>Server / Infrastructure</dd></div>
+          <div><dt>Priority</dt><dd>Critical</dd></div>
         </dl>
         <Route cur={i} />
         <div className="t-act">
@@ -77,12 +77,25 @@ function Ticket() {
 }
 
 const H1 = 'Simplify IT support. Manage every ticket. Empower every team.';
+/* the heading is split into words for the reveal; "every ticket." gets the marker highlight */
+const HL = [4, 5];
+const heading = () => {
+  const words = H1.split(' ');
+  const w = (k, space = true) => (
+    <Fragment key={k}><span className="w" aria-hidden="true" style={{ '--w': k }}><span>{words[k]}</span></span>{space && ' '}</Fragment>
+  );
+  return [
+    ...words.slice(0, HL[0]).map((_, k) => w(k)),
+    <Fragment key="hl"><span className="hero-highlight">{w(HL[0])}{w(HL[1], false)}</span>{' '}</Fragment>,
+    ...words.slice(HL[1] + 1).map((_, k) => w(HL[1] + 1 + k, k < words.length - HL[1] - 2)),
+  ];
+};
 const HeroBg = () => (
   <div className="hero-bg" aria-hidden="true">
     <i className="blob b1" /><i className="blob b2" /><i className="blob b3" />
     <span className="mini m1"><b>BI-T04ID11</b>Assigned</span>
-    <span className="mini m2"><b>SLA</b>01:12:30</span>
-    <span className="mini m3"><b>BI-T22ID02</b>In progress</span>
+    <span className="mini m2"><b>SLA</b>00:42:10</span>
+    <span className="mini m3"><b>BI-T22ID02</b>Server down</span>
     <span className="mini m4"><b>Resolved</b>✓</span>
   </div>
 );
@@ -94,8 +107,8 @@ function Hero() {
       <HeroBg />
       <div className="wrap hero-grid">
         <div className="hero-copy">
-          <h1 aria-label={H1}>{H1.split(' ').map((w, k) => <Fragment key={k}><span className="w" aria-hidden="true" style={{ '--w': k }}><span>{w}</span></span>{' '}</Fragment>)}</h1>
-          <p className="lead">Bring incidents, employee requests, SLA tracking, projects and team chat together in one organised ticketing platform.</p>
+          <h1 aria-label={H1}>{heading()}</h1>
+          <p className="lead">Bring incidents, employee requests, SLA tracking, projects and team chat together in one <span className="hero-underline">organised ticketing platform</span>.</p>
           <div className="cta-row">
             <Link className="btn btn-primary btn-lg" to="/#product">Explore the product</Link>
             <button className="btn btn-ghost btn-lg" onClick={openDemo}>Try live demo <Icon n="i-arrow" /></button>

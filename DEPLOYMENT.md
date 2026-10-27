@@ -34,3 +34,20 @@ Redeploy the previous image or commit. Back up `/data/leads.json` and `contact-m
 Proposed live demo (NOT implemented, needs your approval): a separate backend + database with fictional seed data and `DEMO_MODE=true`;
 a server-side `POST /auth/demo-login` issuing a short-lived token for a least-privilege demo user (no shared password in frontend code);
 blocked admin/config/user-management routes, per-IP rate limits, scheduled database reset. Then set `DEMO_APP_URL`.
+
+---
+# Deploying on Netlify (Functions)
+
+`netlify.toml` and `netlify/functions/api.mjs` replace `server.js` on Netlify (`server.js` is still used for `npm run dev`).
+
+1. Push to GitHub, then Netlify > Add new site > Import from Git. Build settings are read from `netlify.toml`.
+2. Site configuration > Environment variables (all required unless noted):
+   - `COOKIE_SECRET` - random 32+ byte string (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+   - `ADMIN_TOKEN` - protects `/api/admin/leads`
+   - `DEMO_APP_URL` - where visitors go after registering (your demo app; the default is an old hawmess host)
+   - `SITE_URL` (optional, defaults to Netlify's `URL`), `APP_URL`, `CONTACT_EMAIL`, `DEMO_SESSION_HOURS` (optional)
+3. Leads are stored in Netlify Blobs (store `leads`; contact messages in `contact-messages`). Export: `curl -H "Authorization: Bearer $ADMIN_TOKEN" "https://YOUR-SITE/api/admin/leads?format=csv"`.
+4. Run `npm install` once locally so `package-lock.json` includes `@netlify/blobs`, and commit it.
+5. Smoke test: `/api/health` returns ok; `/media/overview.mp4` returns 401 when not registered; register, then the videos play.
+
+Notes: rate limiting is per warm function instance (best effort). Local Netlify emulation: `npx netlify dev`.
