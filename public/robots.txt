@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /demo
+Disallow: /media/
+Disallow: /api/
+Sitemap: __SITE_URL__/sitemap.xml
