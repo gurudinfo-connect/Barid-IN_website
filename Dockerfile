@@ -13,6 +13,7 @@ COPY package.json server.js ./
 COPY --from=build /app/dist ./dist
 COPY media ./media
 ENV NODE_ENV=production PORT=8080 DATA_DIR=/data MEDIA_DIR=/app/media
+RUN mkdir -p /data && chown node:node /data
 VOLUME ["/data"]
 EXPOSE 8080
 USER node

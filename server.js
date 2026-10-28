@@ -35,7 +35,7 @@ const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'dist');                          // built React app (npm run build)
 const ROUTES = new Set(['/', '/privacy', '/terms']);                // client-side routes served by index.html
 const MEDIA_DIR = path.resolve(process.env.MEDIA_DIR || path.join(ROOT, 'media'));
-const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(ROOT, 'data'));
+let DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(ROOT, 'data'));
 const SESSION_HOURS = Number(process.env.DEMO_SESSION_HOURS || 4);
 const APP_URL = (process.env.APP_URL || '').trim();                       // where 'Sign In' goes (the real Barid-IN app)
 const DEMO_APP_URL = (process.env.DEMO_APP_URL || '').trim() || 'https://hawmess-frontend.onrender.com';           // the real Barid-IN app in demo mode (optional)
@@ -49,7 +49,18 @@ if (!COOKIE_SECRET) {
   COOKIE_SECRET = crypto.randomBytes(32).toString('hex');
   console.warn('[warn] COOKIE_SECRET not set - using a random one (demo sessions reset on restart).');
 }
-fs.mkdirSync(DATA_DIR, { recursive: true });
+// The data folder must be writable by the user the server runs as (the Docker image runs as "node", while a
+// freshly mounted disk at /data is usually root-owned, which makes every lead save fail with EACCES).
+// If it is not writable, fall back to a temp folder so the form keeps working, and say so loudly.
+function ensureWritable(dir) {
+  try { fs.mkdirSync(dir, { recursive: true }); fs.accessSync(dir, fs.constants.W_OK); return true; } catch (e) { console.error('[data] not writable:', dir, e.code || e.message); return false; }
+}
+if (!ensureWritable(DATA_DIR)) {
+  const fallback = path.join(require('node:os').tmpdir(), 'barid-data');
+  if (!ensureWritable(fallback)) { console.error('FATAL: no writable data folder.'); process.exit(1); }
+  console.error('[data] WARNING: using', fallback, 'instead. Leads there are lost on restart. Fix DATA_DIR permissions on the host.');
+  DATA_DIR = fallback;
+}
 
 // Only these files can ever be served from MEDIA_DIR.
 const MEDIA = {
@@ -216,7 +227,7 @@ async function handleApi(req, res, url) {
       ? { ...prev, ...value, lastAccessAt: now, accessCount: (prev.accessCount || 1) + 1 }
       : { id: crypto.randomUUID(), ...value, consent: true, consentAt: now, createdAt: now, lastAccessAt: now, accessCount: 1, ipHash: hashIp(ip), userAgent: clean(req.headers['user-agent'], 200) };
     leads[value.email] = lead;
-    try { writeLeads(leads); } catch (e) { log('lead save failed:', e.code || e.message); return sendJson(res, 500, { error: 'We could not save your details. Please try again shortly.' }); }
+    try { writeLeads(leads); } catch (e) { log('lead save failed:', e.code || e.message, 'dir=' + DATA_DIR); return sendJson(res, 500, { error: 'We could not save your details. Please try again shortly.' }); }
     const exp = Date.now() + SESSION_HOURS * 3600_000;
     setCookie(res, req, sign({ lid: lead.id, n: value.name.split(' ')[0], exp }), SESSION_HOURS * 3600);
     log('demo access granted', lead.id);

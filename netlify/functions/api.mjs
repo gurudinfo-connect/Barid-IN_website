@@ -48,7 +48,10 @@ async function store(name) {
     };
   }
   const { getStore } = await import('@netlify/blobs');
-  const s = getStore({ name, consistency: 'strong' });
+  // Netlify normally injects the Blobs context itself; if it does not, set NETLIFY_SITE_ID and NETLIFY_BLOBS_TOKEN
+  // (a personal access token) in the site's environment variables and they are used here.
+  const siteID = env('NETLIFY_SITE_ID') || env('SITE_ID'), token = env('NETLIFY_BLOBS_TOKEN');
+  const s = siteID && token ? getStore({ name, siteID, token, consistency: 'strong' }) : getStore({ name, consistency: 'strong' });
   return { get: (k) => s.get(k, { type: 'json' }), setJSON: (k, v) => s.setJSON(k, v), list: () => s.list() };
 }
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -159,11 +162,12 @@ async function handleApi(req, url, context) {
     if (Object.keys(errors).length) return json(400, { error: 'Please correct the highlighted fields.', fields: errors });
     const leads = await store('leads');
     const key = sha(value.email), now = new Date().toISOString();
-    const prev = await leads.get(key);
+    let prev = null;
+    try { prev = await leads.get(key); } catch (e) { log('lead lookup failed:', e.name, e.message); }
     const lead = prev
       ? { ...prev, ...value, lastAccessAt: now, accessCount: (prev.accessCount || 1) + 1 }
       : { id: crypto.randomUUID(), ...value, consent: true, consentAt: now, createdAt: now, lastAccessAt: now, accessCount: 1, ipHash: hashIp(ip), userAgent: clean(req.headers.get('user-agent'), 200) };
-    try { await leads.setJSON(key, lead); } catch (e) { log('lead save failed:', e.message); return json(500, { error: 'We could not save your details. Please try again shortly.' }); }
+    try { await leads.setJSON(key, lead); } catch (e) { log('lead save failed:', e.name, e.message); return json(500, { error: 'We could not save your details. Please try again shortly.' }); }
     const exp = Date.now() + SESSION_HOURS * 3600_000;
     log('demo access granted', lead.id);
     return json(200, { ok: true, redirect: DEMO_APP_URL }, { 'Set-Cookie': cookieHeader(sign({ lid: lead.id, n: value.name.split(' ')[0], exp }), SESSION_HOURS * 3600) });
